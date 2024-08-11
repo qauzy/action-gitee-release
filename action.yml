@@ -49,6 +49,7 @@ outputs:
     value: ${{ steps.release.outputs.download-url }}
 runs:
   using: "composite"
+
   steps:
     - name: Create release or Upload assets
       id: release
@@ -68,6 +69,33 @@ runs:
       run: |
         pip install -r ${{ github.action_path }}/requirements.txt
         python ${{ github.action_path }}/gitee_release.py
+
+    - name: Create release or Upload assets on Windows
+      id: release
+      shell: bash
+      env:
+        gitee_owner: ${{ inputs.gitee_owner }}
+        gitee_repo: ${{ inputs.gitee_repo }}
+        gitee_token: ${{ inputs.gitee_token }}
+        gitee_tag_name: ${{ inputs.gitee_tag_name }}
+        gitee_release_name: ${{ inputs.gitee_release_name }}
+        gitee_release_body: ${{ inputs.gitee_release_body }}
+        gitee_target_commitish: ${{ inputs.gitee_target_commitish }}
+        gitee_files: ${{ inputs.gitee_files }}
+        gitee_file_name: ${{ inputs.gitee_file_name }}
+        gitee_file_path: ${{ inputs.gitee_file_path }}
+        gitee_release_id: ${{ inputs.gitee_release_id }}
+      run: |
+        # Detect operating system and set the correct path
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          echo "Running on Windows"
+          pip install -r "${{ github.action_path }}\\requirements.txt"
+          python "${{ github.action_path }}\\gitee_release.py"
+        else
+          echo "Running on Linux or macOS"
+          pip install -r "${{ github.action_path }}/requirements.txt"
+          python "${{ github.action_path }}/gitee_release.py"
+        fi   
 
 # Ref: https://haya14busa.github.io/github-action-brandings/
 branding:
