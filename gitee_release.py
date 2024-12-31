@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 # coding:utf-8
+import sys
+import io
 import os, glob
 import requests,json
 from requests_toolbelt import MultipartEncoder
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 class Gitee:
     def __init__(self, owner, token):
