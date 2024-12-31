@@ -27,8 +27,58 @@ class Gitee:
             return True, res["id"]
         else:
             return False, "No 'id' in response"
-            
+
+    def get_attachments(self, repo, release_id):
+        """获取指定 Release 的附件列表"""
+        url = f"https://gitee.com/api/v5/repos/{self.owner}/{repo}/releases/{release_id}/attach_files"
+        params = {
+            "access_token": self.token,
+            "page": 1,
+            "per_page": 100,
+        }
+        response = requests.get(url, params=params)
+        if response.status_code == 200:
+            return True, response.json()
+        else:
+            return False, f"Failed to get attachments: {response.status_code}, {response.text}"
+    def delete_attachment(self, repo, release_id, attach_file_id):
+        """根据附件 ID 删除附件"""
+        url = f"https://gitee.com/api/v5/repos/{self.owner}/{repo}/releases/{release_id}/attach_files/{attach_file_id}"
+        params = {"access_token": self.token}
+        response = requests.delete(url, params=params)
+        if response.status_code == 204:
+            return True, "Attachment deleted successfully"
+        else:
+            return False, f"Failed to delete attachment: {response.status_code}, {response.text}"
+
+    def delete_attachment_by_name(self, repo, release_id, file_name):
+        """根据文件名删除附件"""
+        success, attachments = self.get_attachments(repo, release_id)
+        if not success:
+            return False, attachments
+        for attachment in attachments:
+            if attachment["name"] == file_name:
+                return self.delete_attachment(repo, release_id, attachment["id"])
+        return False, "File not found in attachments"
     def upload_asset(self, repo, release_id, files = None, file_name = None, file_path = None):
+        # 删除同名文件的逻辑
+        if files:
+            for file_path in files:
+                file_name = os.path.basename(file_path.strip())
+                success, msg = self.delete_attachment_by_name(repo, release_id, file_name)
+                if success:
+                    print(f"同名文件 {file_name} 已删除: {msg}")
+                else:
+                    if msg != "File not found in attachments":
+                        raise Exception(f"删除同名文件失败: {msg}")
+
+        elif file_name and file_path:
+            success, msg = self.delete_attachment_by_name(repo, release_id, file_name)
+            if success:
+                print(f"同名文件 {file_name} 已删除: {msg}")
+            else:
+                if msg != "File not found in attachments":
+                    raise Exception(f"删除同名文件失败: {msg}")
         if files:
             fields = [('access_token', self.token)]
             idx = 1
